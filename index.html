@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIRA — Civic Pollution Intelligence Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- 1. LEFT SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="14" stroke="#00d4ff" stroke-width="2" />
+        <path d="M10 16 Q13 10 16 16 Q19 22 22 16" stroke="#00d4ff" stroke-width="2" fill="none"
+          stroke-linecap="round" />
+        <circle cx="16" cy="16" r="3" fill="#00d4ff" />
+      </svg>
+      <span class="brand-text">AIRA</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- Active dashboard icon -->
+      <a href="#" class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard')">
+        <div class="nav-indicator"></div>
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8" />
+          <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8" />
+        </svg>
+      </a>
+      <!-- Map icon -->
+      <a href="#" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M9 3L3 6v15l6-3 6 3 6-3V3l-6 3-6-3z" stroke="currentColor" stroke-width="1.8"
+            stroke-linejoin="round" />
+          <line x1="9" y1="3" x2="9" y2="18" stroke="currentColor" stroke-width="1.8" />
+          <line x1="15" y1="6" x2="15" y2="21" stroke="currentColor" stroke-width="1.8" />
+        </svg>
+      </a>
+      <!-- Alerts icon with badge -->
+      <a href="#" class="nav-item has-badge" data-page="alerts" onclick="switchPage('alerts')" title="Alerts">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        <span class="badge" id="alert-badge">0</span>
+      </a>
+      <!-- Report icon -->
+      <a href="#" class="nav-item" data-page="report" onclick="switchPage('report')" title="Report Incident">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      <!-- Civic Monitoring -->
+      <a href="civic.html" class="nav-item" title="Civic Monitoring">
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.8"/>
+          <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.8"/>
+          <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.8"/>
+          <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.8"/>
+        </svg>
+      </a>
+      <!-- User profile -->
+      <a href="#" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8" />
+          <path d="M20 21a8 8 0 1 0-16 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+      </a>
+    </nav>
+    <div class="sidebar-status">
+      <div class="status-dot online"></div>
+      <span>Online</span>
+    </div>
+  </aside>
+
+  <!-- 2. MAIN CONTENT SPLIT LAYOUT -->
+  <main class="main-content" id="page-dashboard">
+
+    <!-- LEFT COLUMN: CARDS -->
+    <section class="data-col">
+      <div class="summary-col">
+
+      <!-- FORECAST CARD (LIGHT) -->
+      <div class="card forecast-card">
+        <div class="fc-header">
+          <div class="fc-location-info">
+            <div class="fc-location" id="fc-location-name">DELHI NCR <svg viewBox="0 0 24 24" class="icon-sm"
+                fill="none">
+                <path d="M12 2L2 22l10-4 10 4L12 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+              </svg></div>
+            <div class="fc-status" id="fc-status">High</div>
+            <div class="fc-time" id="fc-time">Jul 16 12:00 PM, local time</div>
+          </div>
+          <div class="fc-right-actions">
+            <div class="fc-aqi-circle">
+              <svg viewBox="0 0 64 64" class="ring-svg">
+                <circle cx="32" cy="32" r="28" fill="none" stroke="#f1f5f9" stroke-width="4"></circle>
+                <circle cx="32" cy="32" r="28" fill="none" stroke="#ff9800" stroke-width="4" stroke-dasharray="175.9"
+                  stroke-dashoffset="87.95" id="fc-ring-progress" style="transition: stroke-dashoffset 1s ease-in-out;">
+                </circle>
+                <circle cx="60" cy="32" r="3" fill="#ff9800" id="fc-ring-dot"
+                  style="transition: transform 1s ease-in-out; transform-origin: 32px 32px; transform: rotate(180deg);">
+                </circle>
+              </svg>
+              <div class="circle-content">
+                <div class="circle-val" id="fc-aqi-val">247</div>
+                <div class="circle-lbl">AQI</div>
+              </div>
+            </div>
+            <button class="expand-btn" id="expand-btn" onclick="toggleExpanded()" title="Detailed View">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/>
+                <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <circle cx="12" cy="16" r="1.2" fill="currentColor"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="fc-chart-container">
+          <canvas id="forecastChart"></canvas>
+        </div>
+        <div class="fc-footer">
+          <div class="fcf-left">
+            <div class="fcf-title">24H FORECAST</div>
+            <div class="fcf-subtitle">Selected Ward</div>
+          </div>
+          <div class="fcf-dots">
+            <div class="dot good"></div>
+            <div class="dot moderate"></div>
+            <div class="dot good"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PERSONALISED ACTION PLAN CARD (DARK) -->
+      <div class="card aqi-card reco-card" id="reco-card">
+        <div class="aqi-pulse-ring" id="aqi-pulse-ring"></div>
+
+        <!-- Header -->
+        <div class="reco-header">
+          <div class="reco-title-row">
+            <span class="reco-title">PERSONALISED ACTION PLAN</span>
+            <div class="confidence-badge" id="reco-conf-badge">
+              <div class="conf-dot"></div>
+              <span id="reco-conf-val">—</span>
+            </div>
+          </div>
+          <div class="aqi-location" id="aqi-card-location">📍 NDMC CHARGE 3</div>
+        </div>
+
+        <!-- AQI Headline -->
+        <div class="reco-headline-row">
+          <div class="reco-aqi-pill" id="reco-aqi-pill">
+            <span class="reco-aqi-label">AQI</span>
+            <span class="reco-aqi-val" id="aqi-card-val">—</span>
+          </div>
+          <div class="reco-headline" id="reco-headline">Loading recommendations…</div>
+        </div>
+        <div class="reco-summary" id="reco-summary"></div>
+
+        <!-- Time-sensitive alerts from reports -->
+        <div class="reco-alerts" id="reco-alerts"></div>
+
+        <!-- Guideline columns -->
+        <div class="reco-cols">
+          <div class="reco-col">
+            <div class="reco-col-header">
+              <span class="reco-col-icon">🚶</span>
+              <span class="reco-col-title">OUTDOOR<br>GUIDELINES</span>
+            </div>
+            <ol class="reco-list" id="reco-outdoor"></ol>
+          </div>
+          <div class="reco-col">
+            <div class="reco-col-header">
+              <span class="reco-col-icon">🏠</span>
+              <span class="reco-col-title">INDOOR<br>GUIDELINES</span>
+            </div>
+            <ol class="reco-list" id="reco-indoor"></ol>
+          </div>
+        </div>
+
+        <!-- Footer meta -->
+        <div class="reco-footer">
+          <span id="reco-meta">Based on local data &amp; map pins</span>
+          <button class="reco-refresh-btn" onclick="refreshRecommendations()" title="Refresh">↻</button>
+        </div>
+      </div>
+
+      </div><!-- /.summary-col -->
+
+      <!-- DETAIL PANEL (shown when expanded) -->
+      <div class="detail-panel" id="detail-panel">
+
+        <!-- Header -->
+        <div class="dp-header">
+          <div class="dp-top-row">
+            <span class="dp-location" id="dp-location">NEW DELHI
+              <svg class="icon-sm" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 22l10-4 10 4L12 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+            </span>
+            <svg class="dp-bell" viewBox="0 0 24 24" fill="none">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="dp-condition-row">
+            <div class="dp-condition-left">
+              <div class="dp-condition" id="dp-condition">Extreme</div>
+              <div class="dp-subtime" id="dp-subtime">First 138/20%, local time</div>
+            </div>
+            <div class="dp-aqi-badge">
+              <div class="dp-aqi-num" id="dp-aqi-num">202</div>
+              <div class="dp-aqi-lbl">AQI</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pollutants Row -->
+        <div class="dp-pollutants">
+          <div class="dp-poll-item">
+            <span class="dp-p-val" id="dp-p-aqi">202</span>
+            <span class="dp-p-lbl">AQI</span>
+          </div>
+          <div class="dp-poll-sep"></div>
+          <div class="dp-poll-item">
+            <span class="dp-p-val" id="dp-p-no2">27</span>
+            <span class="dp-p-lbl">NO₂</span>
+          </div>
+          <div class="dp-poll-sep"></div>
+          <div class="dp-poll-item dp-poll-highlight">
+            <span class="dp-p-val" id="dp-p-pm25">168</span>
+            <span class="dp-p-lbl">PM2.5</span>
+          </div>
+          <div class="dp-poll-sep"></div>
+          <div class="dp-poll-item">
+            <span class="dp-p-val" id="dp-p-pm10">202</span>
+            <span class="dp-p-lbl">PM10</span>
+          </div>
+          <div class="dp-poll-sep"></div>
+          <div class="dp-poll-item">
+            <span class="dp-p-val" id="dp-p-o3">20</span>
+            <span class="dp-p-lbl">O₃</span>
+          </div>
+        </div>
+
+        <!-- Hourly Chart -->
+        <div class="dp-chart-section">
+          <div class="dp-time-label" id="dp-time-label">Loading...</div>
+          <div class="dp-chart-wrap">
+            <canvas id="detailChart"></canvas>
+          </div>
+          <!-- Time axis rendered by Chart.js -->
+        </div>
+
+        <!-- Tips -->
+        <div class="dp-tips-section">
+          <div class="dp-tips-header">
+            <div class="dp-tips-title">TIPS BY CATEGORY</div>
+            <div class="dp-tips-sub">Tap to learn more</div>
+          </div>
+          <div class="dp-tips-grid">
+            <button class="tip-btn" title="Running outdoors">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="13" cy="4" r="1.5" fill="currentColor" stroke="none"/>
+                <path d="M6 20l3.5-6 3 3 2.5-5"/>
+                <path d="M5 13.5l3-1 2-3 3.5-2 2 2 3-0.5"/>
+              </svg>
+            </button>
+            <button class="tip-btn" title="Cycling">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="6" cy="16" r="3"/>
+                <circle cx="18" cy="16" r="3"/>
+                <path d="M6 16l4.5-6h4l2 3"/>
+                <path d="M11 10l1.5 6"/>
+              </svg>
+            </button>
+            <button class="tip-btn tip-alert" title="Outdoor alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a10 10 0 0 1 0 20"/>
+                <path d="M12 2a10 10 0 0 0 0 20"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span class="tip-badge">2.1</span>
+            </button>
+            <button class="tip-btn" title="Indoor stay">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /.detail-panel -->
+
+    </section>
+
+    <!-- RIGHT COLUMN: MAP -->
+    <section class="map-col">
+      <div id="map" class="map-container"></div>
+
+      <!-- Absolute positioned overlays inside map -->
+      <button class="map-view-toggle glass-btn" id="heatmap-toggle" onclick="toggleHeatmap()">
+        <span id="heatmap-toggle-lbl">🗺️ Ward View</span>
+      </button>
+
+      <div class="map-zoom-controls">
+        <button class="glass-btn zoom-btn" onclick="mapZoomIn()">+</button>
+        <button class="glass-btn zoom-btn" onclick="mapZoomOut()">−</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ALERTS PAGE -->
+  <section class="alerts-page" id="page-alerts">
+
+    <!-- LEFT: Alert Feed -->
+    <div class="al-feed-col">
+      <div class="al-col-header">
+        <div>
+          <div class="al-col-title">AIRA Intelligence</div>
+          <div class="al-col-heading">Active Alerts</div>
+          <div class="al-col-sub" id="al-timestamp">Generating from live ward data...</div>
+        </div>
+        <button class="al-back-btn" onclick="switchPage('dashboard')" title="Back to Dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="al-alerts-list" id="al-alerts-list">
+        <div class="al-loading">Loading alerts from ward data...</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Stats + Controls -->
+    <div class="al-side-col">
+
+      <div class="al-stats-card">
+        <div class="al-section-label">ALERT SUMMARY</div>
+        <div class="al-stats-grid">
+          <div class="al-stat critical">
+            <div class="al-stat-num" id="al-stat-critical">0</div>
+            <div class="al-stat-lbl">Critical</div>
+          </div>
+          <div class="al-stat warning">
+            <div class="al-stat-num" id="al-stat-warning">0</div>
+            <div class="al-stat-lbl">Warning</div>
+          </div>
+          <div class="al-stat reports">
+            <div class="al-stat-num" id="al-stat-reports">0</div>
+            <div class="al-stat-lbl">Citizen Reports</div>
+          </div>
+          <div class="al-stat wards">
+            <div class="al-stat-num" id="al-stat-wards">0</div>
+            <div class="al-stat-lbl">Wards Affected</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="al-notif-card">
+        <div class="al-section-label">NOTIFICATION CHANNELS</div>
+        <div class="al-notif-list">
+          <div class="al-notif-row">
+            <div class="al-notif-info">
+              <span class="al-notif-icon">📱</span>
+              <div>
+                <div class="al-notif-name">SMS Alerts</div>
+                <div class="al-notif-detail">+91 98×××-×××54</div>
+              </div>
+            </div>
+            <label class="al-toggle"><input type="checkbox" checked><span class="al-toggle-slider"></span></label>
+          </div>
+          <div class="al-notif-row">
+            <div class="al-notif-info">
+              <span class="al-notif-icon">📧</span>
+              <div>
+                <div class="al-notif-name">Email Digest</div>
+                <div class="al-notif-detail">civic@delhi.gov.in</div>
+              </div>
+            </div>
+            <label class="al-toggle"><input type="checkbox" checked><span class="al-toggle-slider"></span></label>
+          </div>
+          <div class="al-notif-row">
+            <div class="al-notif-info">
+              <span class="al-notif-icon">🔔</span>
+              <div>
+                <div class="al-notif-name">Push Notifications</div>
+                <div class="al-notif-detail">This device</div>
+              </div>
+            </div>
+            <label class="al-toggle"><input type="checkbox"><span class="al-toggle-slider"></span></label>
+          </div>
+          <div class="al-notif-row">
+            <div class="al-notif-info">
+              <span class="al-notif-icon">🏛️</span>
+              <div>
+                <div class="al-notif-name">DPCC Auto-Escalation</div>
+                <div class="al-notif-detail">Civic authority notified</div>
+              </div>
+            </div>
+            <label class="al-toggle"><input type="checkbox" checked><span class="al-toggle-slider"></span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="al-threshold-card">
+        <div class="al-section-label">TRIGGER THRESHOLDS</div>
+        <div class="al-threshold-list">
+          <div class="al-thresh-row">
+            <span class="al-thresh-lbl">AQI Critical</span>
+            <div class="al-thresh-right"><span class="al-thresh-val">300+</span><div class="al-thresh-dot" style="background:#ef4444"></div></div>
+          </div>
+          <div class="al-thresh-row">
+            <span class="al-thresh-lbl">AQI Warning</span>
+            <div class="al-thresh-right"><span class="al-thresh-val">200+</span><div class="al-thresh-dot" style="background:#f97316"></div></div>
+          </div>
+          <div class="al-thresh-row">
+            <span class="al-thresh-lbl">PM2.5 Warning</span>
+            <div class="al-thresh-right"><span class="al-thresh-val">150 µg/m³</span><div class="al-thresh-dot" style="background:#fbbf24"></div></div>
+          </div>
+          <div class="al-thresh-row">
+            <span class="al-thresh-lbl">NO₂ Warning</span>
+            <div class="al-thresh-right"><span class="al-thresh-val">80 ppb</span><div class="al-thresh-dot" style="background:#fbbf24"></div></div>
+          </div>
+          <div class="al-thresh-row">
+            <span class="al-thresh-lbl">Citizen Reports</span>
+            <div class="al-thresh-right"><span class="al-thresh-val">2+ per cluster</span><div class="al-thresh-dot" style="background:#8b5cf6"></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- REPORT PAGE -->
+  <section class="report-page" id="page-report">
+
+    <!-- LEFT: FORM -->
+    <div class="rp-form-col">
+      <div class="rp-form-card">
+
+        <div class="rp-form-header">
+          <div>
+            <div class="rp-form-title">Report Pollution Incident</div>
+            <div class="rp-form-sub">Your report helps enforce cleaner air for Delhi</div>
+          </div>
+          <button class="rp-close-btn" onclick="cancelReport()" title="Back to Dashboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- CATEGORY -->
+        <div class="rp-section-label">INCIDENT TYPE</div>
+        <div class="rp-cat-grid">
+          <button class="rp-cat-btn" data-cat="burning"    onclick="selectCategory('burning')">
+            <span class="rp-cat-icon">🔥</span>
+            <span class="rp-cat-label">Illegal Burning</span>
+          </button>
+          <button class="rp-cat-btn" data-cat="vehicle"    onclick="selectCategory('vehicle')">
+            <span class="rp-cat-icon">🚗</span>
+            <span class="rp-cat-label">Vehicle Smoke</span>
+          </button>
+          <button class="rp-cat-btn" data-cat="industrial" onclick="selectCategory('industrial')">
+            <span class="rp-cat-icon">🏭</span>
+            <span class="rp-cat-label">Industrial</span>
+          </button>
+          <button class="rp-cat-btn" data-cat="other"      onclick="selectCategory('other')">
+            <span class="rp-cat-icon">⚠️</span>
+            <span class="rp-cat-label">Other Hazard</span>
+          </button>
+        </div>
+
+        <!-- DESCRIPTION -->
+        <div class="rp-section-label">DESCRIPTION</div>
+        <textarea id="rp-description" class="rp-textarea"
+          placeholder="Describe the incident — location details, severity, source…"
+          rows="3"></textarea>
+
+        <!-- MEDIA UPLOAD -->
+        <div class="rp-section-label">ATTACH PHOTO / VIDEO <span class="rp-optional">optional</span></div>
+        <label class="rp-upload-zone" for="rp-file-input">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="24" height="24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <span>Upload or tap to capture</span>
+          <input id="rp-file-input" type="file" accept="image/*,video/*" capture="environment"
+            onchange="handleMediaUpload(this)" style="display:none">
+        </label>
+        <div class="rp-media-preview" id="rp-media-preview"></div>
+
+        <!-- LOCATION -->
+        <div class="rp-section-label">LOCATION</div>
+        <div class="rp-location-row">
+          <div class="rp-coords-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14">
+              <circle cx="12" cy="10" r="3"/>
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+            </svg>
+            <span id="rp-coords" class="rp-coords-text">28.61390, 77.20900</span>
+          </div>
+          <button class="rp-detect-btn" id="rp-detect-btn" onclick="detectLocation()">📍 Detect Location</button>
+        </div>
+        <div class="rp-map-hint">Or drag the pin / tap the map to adjust →</div>
+
+        <!-- ACTIONS -->
+        <div class="rp-actions">
+          <button class="rp-cancel-btn" onclick="cancelReport()">Cancel</button>
+          <button class="rp-submit-btn" onclick="submitReport()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/>
+            </svg>
+            Submit Report
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: MINI MAP -->
+    <div class="rp-map-col">
+      <div id="report-map" class="rp-minimap"></div>
+      <div class="rp-minimap-label">📍 Tap map or drag pin to set exact location</div>
+    </div>
+
+  </section>
+
+  <script src="app.js"></script>
+  <script src="reporter.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIRA — Civic Monitoring & Mitigation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="civic.css" />
+</head>
+<body class="civic-body">
+
+  <!-- SIDEBAR (reuse main app sidebar classes from style.css) -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="14" stroke="#00d4ff" stroke-width="2" />
+        <path d="M10 16 Q13 10 16 16 Q19 22 22 16" stroke="#00d4ff" stroke-width="2" fill="none" stroke-linecap="round" />
+        <circle cx="16" cy="16" r="3" fill="#00d4ff" />
+      </svg>
+      <span class="brand-text">AIRA</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="index.html" class="nav-item" title="Dashboard">
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8" />
+          <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8" />
+        </svg>
+      </a>
+      <a href="civic.html" class="nav-item active" title="Civic Monitoring">
+        <div class="nav-indicator"></div>
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M3 21h18M3 7l9-4 9 4M6 7v9m4-9v9m4-9v9m4-9v9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      <a href="index.html" class="nav-item" title="Alerts">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+      </a>
+    </nav>
+    <div class="sidebar-status">
+      <div class="status-dot online"></div>
+      <span>Online</span>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="cv-main">
+
+    <!-- TOP HEADER BAR -->
+    <header class="cv-topbar">
+      <div class="cv-topbar-left">
+        <h1 class="cv-page-title">
+          <span class="cv-title-icon">🏛️</span>
+          Civic Monitoring & Mitigation
+        </h1>
+        <p class="cv-page-sub">Administrative command centre — ward risk analysis &amp; official action directives</p>
+      </div>
+      <div class="cv-topbar-right">
+        <div class="cv-kpi">
+          <div class="cv-kpi-box cv-kpi-danger">
+            <span class="cv-kpi-val" id="cv-severe-count">0</span>
+            <span class="cv-kpi-lbl">Severe</span>
+          </div>
+          <div class="cv-kpi-box cv-kpi-warn">
+            <span class="cv-kpi-val" id="cv-hotspot-count">0</span>
+            <span class="cv-kpi-lbl">Hotspots</span>
+          </div>
+          <div class="cv-kpi-box cv-kpi-info">
+            <span class="cv-kpi-val" id="cv-total-reports">0</span>
+            <span class="cv-kpi-lbl">Reports</span>
+          </div>
+        </div>
+        <button class="cv-refresh-btn" onclick="civicRefresh()" title="Refresh Data">
+          <span class="cv-refresh-icon">↻</span> Refresh
+        </button>
+      </div>
+    </header>
+
+    <!-- 4-PANEL GRID -->
+    <div class="cv-grid">
+
+      <!-- A: COMMAND PANEL — Ward Risk Ranking -->
+      <section class="cv-panel cv-panel-command">
+        <div class="cv-panel-hd">
+          <div class="cv-panel-label">
+            <span class="cv-panel-icon">⚡</span> Command Panel
+          </div>
+          <span class="cv-badge cv-badge-red" id="cv-risk-badge">TOP 5 RISK</span>
+        </div>
+        <div class="cv-panel-scroll" id="cv-ward-list">
+          <div class="cv-empty">Loading ward data…</div>
+        </div>
+      </section>
+
+      <!-- B: HOTSPOT MAP -->
+      <section class="cv-panel cv-panel-map">
+        <div class="cv-panel-hd">
+          <div class="cv-panel-label">
+            <span class="cv-panel-icon">🗺️</span> Hotspot Map
+          </div>
+          <span class="cv-badge cv-badge-fire" id="cv-map-badge">0 ACTIVE</span>
+        </div>
+        <div class="cv-map-wrap">
+          <div id="civic-map"></div>
+        </div>
+      </section>
+
+      <!-- C: ADMINISTRATIVE ACTIONS — For Officials Only -->
+      <section class="cv-panel cv-panel-actions">
+        <div class="cv-panel-hd">
+          <div class="cv-panel-label">
+            <span class="cv-panel-icon">📋</span> Administrative Directives
+          </div>
+          <span class="cv-badge cv-badge-blue" id="cv-source-badge">—</span>
+        </div>
+        <!-- Ward detail card (shown when a ward is selected) -->
+        <div class="cv-ward-detail" id="cv-ward-detail" style="display:none">
+          <div class="cv-detail-top">
+            <span class="cv-detail-name" id="cv-selected-ward">—</span>
+            <span class="cv-detail-risk" id="cv-selected-risk">0</span>
+          </div>
+          <div class="cv-detail-row">
+            <span class="cv-detail-chip" id="cv-selected-aqi">AQI —</span>
+            <span class="cv-detail-chip" id="cv-selected-trend">— —</span>
+            <span class="cv-detail-chip" id="cv-selected-reports">0 reports</span>
+          </div>
+        </div>
+        <!-- AI Assessment -->
+        <div class="cv-assessment" id="cv-assessment"></div>
+        <!-- Action cards -->
+        <div class="cv-panel-scroll" id="cv-action-list">
+          <div class="cv-empty">
+            <div class="cv-empty-icon">📋</div>
+            <div>Select a ward from the Command Panel or Map</div>
+            <div class="cv-empty-sub">AI-powered administrative directives will appear here</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- D: INCIDENT TIMELINE -->
+      <section class="cv-panel cv-panel-timeline">
+        <div class="cv-panel-hd">
+          <div class="cv-panel-label">
+            <span class="cv-panel-icon">📡</span> Incident Timeline
+          </div>
+          <span class="cv-badge cv-badge-green cv-pulse">● LIVE</span>
+        </div>
+        <div class="cv-panel-scroll" id="cv-timeline-list">
+          <div class="cv-empty">Loading timeline…</div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="civic.js"></script>
+</body>
+</html>
